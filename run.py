@@ -23,9 +23,9 @@ def run_speedtests():
         a hash of speedtest names to (down Mbps, up Mbps, ping Mbps) data
     """
     return {
-        'Ookla': run_ookla(),
-        'Fast.com': run_fastcom(),
-        'M-Lab-NDT': run_mlabndt(),
+        'speedtest': run_ookla(),
+        'netflix': run_fastcom(),
+        'mlab': run_mlabndt(),
     }
 
 def run_ookla():
@@ -55,7 +55,7 @@ def run_ookla():
     return (down, up, ping)
 
 def run_fastcom():
-    """Runs Fast.com test
+    """Runs fast.com test
 
     returns:
         (down Mbps, None, None)
@@ -69,7 +69,7 @@ def run_fastcom():
     val, unit = cp.stdout.split()
     return (float(val), None, None)
 
-def run_mlabndt():
+def run_ndt():
     """Runs M-Lab NDT test
 
     returns:
@@ -104,19 +104,19 @@ def generate_graph(hist):
     ys = [[], [], [], [], []]
     for run in hist:
         x.append(datetime.datetime.fromtimestamp(run['timestamp']))
-        if 'Ookla' in run['data']:
-            ys[0].append(run['data']['Ookla'][0])
-            ys[3].append(run['data']['Ookla'][1])
+        if 'speedtest' in run['data']:
+            ys[0].append(run['data']['speedtest'][0])
+            ys[3].append(run['data']['speedtest'][1])
         else:
             ys[0].append(None)
             ys[3].append(None)
-        if 'Fast.com' in run['data']:
-            ys[1].append(run['data']['Fast.com'][0])
+        if 'netflix' in run['data']:
+            ys[1].append(run['data']['netflix'][0])
         else:
             ys[1].append(None)
-        if 'M-Lab-NDT' in run['data']:
-            ys[2].append(run['data']['M-Lab-NDT'][0])
-            ys[4].append(run['data']['M-Lab-NDT'][1])
+        if 'mlab' in run['data']:
+            ys[2].append(run['data']['mlab'][0])
+            ys[4].append(run['data']['mlab'][1])
         else:
             ys[2].append(None)
             ys[4].append(None)
@@ -131,7 +131,7 @@ def generate_graph(hist):
 
     # Add plot details
     plt.ylabel('MBps')
-    plt.legend(['speedtest down', 'netflix down', 'mlab down', 'speedtest up', 'mlab up'])
+    plt.legend(['speedtest down', 'netflix down', 'mdt down', 'speedtest up', 'mlab up'])
     plt.style.use('fivethirtyeight')
 
     # Save the plot
@@ -154,7 +154,7 @@ def tweet_history(max_age_secs):
     med_down, med_up = generate_graph(hist)
     print("Tweeting graph")
     media = api.media_upload(PLOTPNG)
-    api.update_status('Median speed: %.1f MBps down / %.1f MBps up' % (med_down, med_up), media_ids=[media.media_id])
+    api.update_status('Median speed: %.1f Mbps down / %.1f Mbps up' % (med_down, med_up), media_ids=[media.media_id])
 
 def tweet_due(max_age_secs):
     for rec in get_history(max_age_secs):
@@ -163,8 +163,7 @@ def tweet_due(max_age_secs):
     return True
 
 def main():
-    #do_tweet = tweet_due(12*60*60)
-    do_tweet = tweet_due(1*60*60)
+    do_tweet = tweet_due(8*60*60)
 
     data = run_speedtests()
     if data:
