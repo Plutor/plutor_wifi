@@ -131,7 +131,7 @@ def generate_graph(hist):
 
     # Add plot details
     plt.ylabel('MBps')
-    plt.legend(['speedtest down', 'netflix down', 'mdt down', 'speedtest up', 'mlab up'])
+    plt.legend(['speedtest down', 'netflix down', 'mlab down', 'speedtest up', 'mlab up'])
     plt.style.use('fivethirtyeight')
 
     # Save the plot
