@@ -99,9 +99,14 @@ class PlutorWifi(object):
     def run_mlabndt(self):
         """Runs M-Lab NDT test
 
+        Will only run a maximum of once per hour.
+
         returns:
             (down Mbps, up Mbps, ping Mbps)
         """
+        if not self.should_mlabndt(60*60):
+            print("Skipping M-Lab NDT")
+            return
         print("Running M-Lab NDT")
         cp = subprocess.run(['ndt7-client', '-quiet', '-format=json'], stdout=subprocess.PIPE)
         print(cp)
@@ -111,6 +116,11 @@ class PlutorWifi(object):
         data = json.loads(cp.stdout.decode("utf-8")) 
         return (data['Download']['Value'], data['Upload']['Value'], data['MinRTT']['Value'])
 
+    def should_mlabndt(self, max_age_secs):
+        for rec in self.hist:
+            if 'mlab' in rec['data'] and rec['timestamp'] > NOW - max_age_secs:
+                return False
+        return True
 
     # ========================
 
