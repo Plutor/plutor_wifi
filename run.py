@@ -40,6 +40,7 @@ def run_speedtests():
     mlab = run_mlabndt()
     if mlab:
         rv['mlab'] = mlab
+    return rv
 
 def run_ookla():
     """Runs Ookla speedtest.net
