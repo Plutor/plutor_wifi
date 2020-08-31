@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import argparse
 import datetime
 import json
 import matplotlib.pyplot as plt
@@ -16,17 +17,29 @@ CFG = os.path.join(THISDIR, "cfg")
 PLOTPNG = os.path.join(THISDIR, "plot.png")
 NOW = time.time()
 
+def parseargs():
+    parser = argparse.ArgumentParser(description='@plutor_wifi tweet bot')
+    parser.add_argument('--force_tweet', action='store_true')
+    parser.add_argument('--only_test', action='store_true')
+    parser.add_argument('--skip_test', action='store_true')
+    return parser.parse_args()
+
 def run_speedtests():
     """Runs all configured speedtests.
 
     returns:
         a hash of speedtest names to (down Mbps, up Mbps, ping Mbps) data
     """
-    return {
-        'speedtest': run_ookla(),
-        'netflix': run_fastcom(),
-        'mlab': run_mlabndt(),
-    }
+    rv = {}
+    speedtest = run_ookla()
+    if speedtest:
+        rv['speedtest'] = speedtest
+    fastcom = run_fastcom()
+    if fastcom:
+        rv['fastcom'] = fastcom
+    mlab = run_mlabndt()
+    if mlab:
+        rv['mlab'] = mlab
 
 def run_ookla():
     """Runs Ookla speedtest.net
@@ -110,8 +123,8 @@ def generate_graph(hist):
         else:
             ys[0].append(None)
             ys[3].append(None)
-        if 'netflix' in run['data']:
-            ys[1].append(run['data']['netflix'][0])
+        if 'fastcom' in run['data']:
+            ys[1].append(run['data']['fastcom'][0])
         else:
             ys[1].append(None)
         if 'mlab' in run['data']:
@@ -130,8 +143,8 @@ def generate_graph(hist):
         ax.plot(x, y)
 
     # Add plot details
-    plt.ylabel('MBps')
-    plt.legend(['speedtest down', 'netflix down', 'mlab down', 'speedtest up', 'mlab up'])
+    plt.ylabel('Mbps')
+    plt.legend(['speedtest down', 'fast.com down', 'mlab down', 'speedtest up', 'mlab up'])
     plt.style.use('fivethirtyeight')
 
     # Save the plot
@@ -163,14 +176,18 @@ def tweet_due(max_age_secs):
     return True
 
 def main():
-    do_tweet = tweet_due(8*60*60)
+    args = parseargs()
+    do_tweet = (args.force_tweet or tweet_due(8*60*60)) and not args.only_test
 
-    data = run_speedtests()
-    if data:
-        save_data(data, do_tweet)
+    if not args.skip_test:
+        data = run_speedtests()
+        if data:
+            save_data(data, do_tweet)
         
     if do_tweet:
         tweet_history(24*60*60)
+    else:
+        print("Skipping tweet")
 
 main()
 
