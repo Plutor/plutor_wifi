@@ -4,6 +4,7 @@ import argparse
 import datetime
 import json
 import matplotlib.pyplot as plt
+import matplotlib.dates as dates
 import os
 import statistics
 import subprocess
@@ -155,7 +156,9 @@ class PlutorWifi(object):
         med_up = statistics.median(filter(None, ys[3]+ys[4]))
 
         # Plot data including options
-        fig, ax = plt.subplots(figsize=(8, 4.4))
+        fig, ax = plt.subplots(figsize=(8, 4.4), sharex=True)
+        ax.xaxis.set_major_formatter(dates.DateFormatter('%H:%M'))
+        ax.minorticks_on()
         for n, x in enumerate(xs):
             ax.plot(x, ys[n])
 
