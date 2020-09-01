@@ -133,34 +133,31 @@ class PlutorWifi(object):
         """Returns med_down, med_up."""
         print("Creating graph")
         # Define data
-        x = []
+        xs = [[], [], [], [], []]
         ys = [[], [], [], [], []]
         for run in self.hist:
-            x.append(datetime.datetime.fromtimestamp(run['timestamp']))
+            stamp = datetime.datetime.fromtimestamp(run['timestamp'])
             if 'speedtest' in run['data']:
                 ys[0].append(run['data']['speedtest'][0])
+                xs[0].append(stamp)
                 ys[3].append(run['data']['speedtest'][1])
-            else:
-                ys[0].append(None)
-                ys[3].append(None)
+                xs[3].append(stamp)
             if 'fastcom' in run['data']:
                 ys[1].append(run['data']['fastcom'][0])
-            else:
-                ys[1].append(None)
+                xs[1].append(stamp)
             if 'mlab' in run['data']:
                 ys[2].append(run['data']['mlab'][0])
+                xs[2].append(stamp)
                 ys[4].append(run['data']['mlab'][1])
-            else:
-                ys[2].append(None)
-                ys[4].append(None)
+                xs[4].append(stamp)
 
         med_down = statistics.median(filter(None, ys[0]+ys[1]+ys[2]))
         med_up = statistics.median(filter(None, ys[3]+ys[4]))
 
         # Plot data including options
         fig, ax = plt.subplots(figsize=(8, 4.4))
-        for y in ys:
-            ax.plot(x, y)
+        for n, x in enumerate(xs):
+            ax.plot(x, ys[n])
 
         # Add plot details
         plt.ylabel('Mbps')
