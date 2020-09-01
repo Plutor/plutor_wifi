@@ -8,6 +8,7 @@ import matplotlib.dates as dates
 import os
 import statistics
 import subprocess
+import sys
 import time
 import tinydb
 import tweepy
@@ -29,14 +30,44 @@ class PlutorWifi(object):
 
     def __init__(self):
         # Load config
-        with open(CFG) as f:
-            data = f.read()
-            self.cfg = json.loads(data)
+        try:
+            with open(CFG) as f:
+                data = f.read()
+                self.cfg = json.loads(data)
+        except IOError:
+            print('Visit https://developer.twitter.com/en/portal/apps/new and create '
+                  'a new app.\n')
+            print('Then, create a file at', CFG, 'with the following content:')
+            print('{\n  "api_key": "(new app API key)",')
+            print('  "api_secret": "(new app API key secret)"\n}')
+            sys.exit(1)
 
         # Load recent history
         self.db = tinydb.TinyDB(TINYDB)
         Rec = tinydb.Query()
         self.hist = self.db.search(Rec.timestamp > NOW - 24*60*60)
+
+        # Setup Twitter API
+        if ('api_key' not in self.cfg or 'api_secret' not in self.cfg or
+            not self.cfg['api_key'] or not self.cfg['api_secret']):
+            print('Visit https://developer.twitter.com/en/portal/apps/new and create '
+                  'a new app.\n')
+            print('Then, create a file at', CFG, 'with the following content:')
+            print('{\n  "api_key": "(new app API key)",')
+            print('  "api_secret": "(new app API key secret)"\n}')
+            sys.exit(1)
+        auth = tweepy.OAuthHandler(self.cfg['api_key'], self.cfg['api_secret'],
+                                   'https://oauthdebugger.com/debug')
+        if ('oauth_token' not in self.cfg or 'oauth_verifier' not in self.cfg or
+            not self.cfg['oauth_token'] or not self.cfg['oauth_verifier']):
+            print('Visit', auth.get_authorization_url(), 'and grant plutor_wifi '
+                  'access.')
+            print('Then, add the values into', CFG, 'as follows:')
+            print('  "oauth_token": "(value of oauth_token)",')
+            print('  "oauth_verifier": "(value of oauth_verifier)"\n}')
+            sys.exit(1)
+        auth.set_access_token(self.cfg['oauth_token'], self.cfg['oauth_verifier'])
+        self.api = tweepy.API(auth)
 
     def run_speedtests(self):
         """Runs all configured speedtests.
@@ -191,9 +222,6 @@ class PlutorWifi(object):
         return med_down, med_up
 
     def tweet_history(self, max_age_secs):
-        auth = tweepy.OAuthHandler(self.cfg['api_key'], self.cfg['api_secret'])
-        auth.set_access_token(self.cfg['access_token'], self.cfg['access_token_secret'])
-        api = tweepy.API(auth)
         med_down, med_up = self.generate_graph()
         print("Tweeting graph")
         media = api.media_upload(PLOTPNG)
