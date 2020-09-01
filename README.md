@@ -31,9 +31,7 @@ $ go get -v github.com/m-lab/ndt7-client-go/cmd/ndt7-client && sudo ln -s $HOME/
 $ go get -v github.com/gesquive/fast-cli && sudo ln -s $HOME/go/bin/fast-cli /usr/bin
 ```
 
-* Run `run.py`, it will instruct you how to create the new Twitter app and create the cfg file.
-
-* Run `run.py` again, it will instruct you how to grant the new app access to tweet and update the cfg.
+* Run `run.py`, it will instruct you how to grant the app access to tweet and update the cfg.
 
 * Run `run.py` again, it should run speedtests and tweet a (pretty empty) graph.
 

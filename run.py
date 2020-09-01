@@ -30,17 +30,9 @@ class PlutorWifi(object):
 
     def __init__(self):
         # Load config
-        try:
-            with open(CFG) as f:
-                data = f.read()
-                self.cfg = json.loads(data)
-        except IOError:
-            print('Visit https://developer.twitter.com/en/portal/apps/new and create '
-                  'a new app.\n')
-            print('Then, create a file at', CFG, 'with the following content:')
-            print('{\n  "api_key": "(new app API key)",')
-            print('  "api_secret": "(new app API key secret)"\n}')
-            sys.exit(1)
+        with open(CFG) as f:
+            data = f.read()
+            self.cfg = json.loads(data)
 
         # Load recent history
         self.db = tinydb.TinyDB(TINYDB)
@@ -48,14 +40,6 @@ class PlutorWifi(object):
         self.hist = self.db.search(Rec.timestamp > NOW - 24*60*60)
 
         # Setup Twitter API
-        if ('api_key' not in self.cfg or 'api_secret' not in self.cfg or
-            not self.cfg['api_key'] or not self.cfg['api_secret']):
-            print('Visit https://developer.twitter.com/en/portal/apps/new and create '
-                  'a new app.\n')
-            print('Then, create a file at', CFG, 'with the following content:')
-            print('{\n  "api_key": "(new app API key)",')
-            print('  "api_secret": "(new app API key secret)"\n}')
-            sys.exit(1)
         auth = tweepy.OAuthHandler(self.cfg['api_key'], self.cfg['api_secret'],
                                    'https://oauthdebugger.com/debug')
         if ('oauth_token' not in self.cfg or 'oauth_verifier' not in self.cfg or
