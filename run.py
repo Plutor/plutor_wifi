@@ -54,6 +54,9 @@ class PlutorWifi(object):
         mlab = self.run_mlabndt()
         if mlab:
             rv['mlab'] = mlab
+        chromedl = self.run_chromedl()
+        if chromedl:
+            rv['chromedl'] = chromedl
         return rv
 
     def run_ookla(self):
@@ -123,6 +126,16 @@ class PlutorWifi(object):
                 return False
         return True
 
+    def run_chromedl(self):
+        print("Running Chrome download")
+        cp = subprocess.run(['curl', 'https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb', '-o', '/dev/null', '-s', '-w', '%{speed_download}'], stdout=subprocess.PIPE)
+        print(cp)
+        if cp.returncode != 0:
+            print('Bad return code ', cp.returncode)
+            return None
+        bytes_persec = float(cp.stdout)
+        return (bytes_persec * 8 / 1024 / 1024, None, None)
+
     # ========================
 
     def save_data(self, data, do_tweet):
@@ -134,23 +147,26 @@ class PlutorWifi(object):
         """Returns med_down, med_up."""
         print("Creating graph")
         # Define data
-        xs = [[], [], [], [], []]
-        ys = [[], [], [], [], []]
+        xs = [[], [], [], [], [], []]
+        ys = [[], [], [], [], [], []]
         for run in self.hist:
             stamp = datetime.datetime.fromtimestamp(run['timestamp'])
             if 'speedtest' in run['data']:
                 ys[0].append(run['data']['speedtest'][0])
                 xs[0].append(stamp)
-                ys[3].append(run['data']['speedtest'][1])
-                xs[3].append(stamp)
+                ys[4].append(run['data']['speedtest'][1])
+                xs[4].append(stamp)
             if 'fastcom' in run['data']:
                 ys[1].append(run['data']['fastcom'][0])
                 xs[1].append(stamp)
             if 'mlab' in run['data']:
                 ys[2].append(run['data']['mlab'][0])
                 xs[2].append(stamp)
-                ys[4].append(run['data']['mlab'][1])
-                xs[4].append(stamp)
+                ys[5].append(run['data']['mlab'][1])
+                xs[5].append(stamp)
+            if 'chromedl' in run['data']:
+                ys[3].append(run['data']['chromedl'][0])
+                xs[3].append(stamp)
 
         med_down = statistics.median(filter(None, ys[0]+ys[1]+ys[2]))
         med_up = statistics.median(filter(None, ys[3]+ys[4]))
@@ -164,7 +180,8 @@ class PlutorWifi(object):
 
         # Add plot details
         plt.ylabel('Mbps')
-        plt.legend(['speedtest down', 'fast.com down', 'mlab down', 'speedtest up', 'mlab up'])
+        plt.legend(['speedtest down', 'fast.com down', 'mlab down', 'chrome down',
+                    'speedtest up', 'mlab up'])
         plt.style.use('fivethirtyeight')
 
         # Save the plot
@@ -180,7 +197,8 @@ class PlutorWifi(object):
         med_down, med_up = self.generate_graph()
         print("Tweeting graph")
         media = api.media_upload(PLOTPNG)
-        api.update_status('Median speed: %.1f Mbps down / %.1f Mbps up' % (med_down, med_up), media_ids=[media.media_id])
+        api.update_status('Median speed: %.1f Mbps down / %.1f Mbps up' % (med_down, med_up),
+                          media_ids=[media.media_id])
 
     def tweet_due(self, max_age_secs):
         for rec in self.hist:
