@@ -208,9 +208,9 @@ class PlutorWifi(object):
     def tweet_history(self, max_age_secs):
         med_down, med_up = self.generate_graph()
         print("Tweeting graph")
-        media = api.media_upload(PLOTPNG)
-        api.update_status('Median speed: %.1f Mbps down / %.1f Mbps up' % (med_down, med_up),
-                          media_ids=[media.media_id])
+        media = self.api.media_upload(PLOTPNG)
+        self.api.update_status('Median speed: %.1f Mbps down / %.1f Mbps up' % (med_down, med_up),
+                               media_ids=[media.media_id])
 
     def tweet_due(self, max_age_secs):
         for rec in self.hist:
