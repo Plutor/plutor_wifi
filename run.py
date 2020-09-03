@@ -47,7 +47,7 @@ class PlutorWifi(object):
 
     def write_cfg(self):
         with open(CFG, 'w') as f:
-            json.dump(f, self.cfg, indent=4)
+            json.dump(self.cfg, f, indent=4)
 
     def auth(self):
         # Setup Twitter API
