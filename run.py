@@ -13,11 +13,13 @@ import time
 import tinydb
 import tweepy
 
+
 THISDIR = os.path.dirname(os.path.abspath(__file__))
 TINYDB = os.path.join(THISDIR, "db.json")
 CFG = os.path.join(THISDIR, "cfg")
 PLOTPNG = os.path.join(THISDIR, "plot.png")
 NOW = time.time()
+
 
 def parseargs():
     parser = argparse.ArgumentParser(description='@plutor_wifi tweet bot')
@@ -26,31 +28,47 @@ def parseargs():
     parser.add_argument('--skip_test', action='store_true')
     return parser.parse_args()
 
+
 class PlutorWifi(object):
 
     def __init__(self):
         # Load config
-        with open(CFG) as f:
-            data = f.read()
-            self.cfg = json.loads(data)
+        self.read_cfg()
 
         # Load recent history
         self.db = tinydb.TinyDB(TINYDB)
         Rec = tinydb.Query()
         self.hist = self.db.search(Rec.timestamp > NOW - 24*60*60)
 
+    def read_cfg(self):
+        with open(CFG) as f:
+            data = f.read()
+            self.cfg = json.loads(data)
+
+    def write_cfg(self):
+        with open(CFG, 'w') as f:
+            json.dump(f, self.cfg, indent=4)
+
+    def auth(self):
         # Setup Twitter API
         auth = tweepy.OAuthHandler(self.cfg['api_key'], self.cfg['api_secret'],
                                    'https://oauthdebugger.com/debug')
-        if ('oauth_token' not in self.cfg or 'oauth_verifier' not in self.cfg or
-            not self.cfg['oauth_token'] or not self.cfg['oauth_verifier']):
+
+        if ('request_token' not in self.cfg or 'access_token' not in self.cfg):
             print('Visit', auth.get_authorization_url(), 'and grant plutor_wifi '
                   'access.')
-            print('Then, add the values into', CFG, 'as follows:')
-            print('  "oauth_token": "(value of oauth_token)",')
-            print('  "oauth_verifier": "(value of oauth_verifier)"\n}')
+            verifier = input ('Then, copy the "oauth_verifier" here: ')
+            access_token = auth.get_access_token(verifier)
+            self.cfg['request_token'] = auth.request_token
+            self.cfg['access_token'] = access_token
+
+            print('Writing new cfg:')
+            print(json.dumps(self.cfg, indent=4))
+            self.write_cfg()
             sys.exit(1)
-        auth.set_access_token(self.cfg['oauth_token'], self.cfg['oauth_verifier'])
+
+        auth.request_token = self.cfg['request_token']
+        auth.set_access_token(*self.cfg['access_token'])
         self.api = tweepy.API(auth)
 
     def run_speedtests(self):
@@ -218,9 +236,11 @@ class PlutorWifi(object):
                 return False
         return True
 
+
 def main():
     args = parseargs()
     p = PlutorWifi()
+    p.auth()
 
     do_tweet = (args.force_tweet or p.tweet_due(8*60*60)) and not args.only_test
     if not args.skip_test:
@@ -233,5 +253,7 @@ def main():
     else:
         print("Skipping tweet")
 
-main()
+
+if __name__ == "__main__":
+    main()
 

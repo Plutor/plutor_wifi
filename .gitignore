@@ -1,0 +1,5 @@
+cfg
+*.swp
+Pipfile.lock
+db.json
+plot.png
