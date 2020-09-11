@@ -124,14 +124,22 @@ class PlutorWifi(object):
         returns:
             (down Mbps, None, None)
         """
-        print("Running fast.com")
-        cp = subprocess.run(['fast-cli', '-s'], stdout=subprocess.PIPE)
-        print(cp)
-        if cp.returncode != 0:
-            print('Bad return code %d' % cp.returncode)
-            return None
-        val, unit = cp.stdout.split()
-        return (float(val), None, None)
+        tries = 5
+        while(tries):
+            tries -= 1
+            print("Running fast.com (remaining tries: %d)" % tries)
+            cp = subprocess.run(['fast-cli', '-s'], stdout=subprocess.PIPE)
+            print(cp)
+            if cp.returncode != 0:
+                print('Bad return code %d' % cp.returncode)
+                continue
+            if 'NaN bps' in str(cp.stdout):
+                print('Bad result:\n%s' % cp.stdout)
+                continue
+            result = cp.stdout.split()
+            val = result[0]
+            return (float(val), None, None)
+        return None
 
     def run_mlabndt(self):
         """Runs M-Lab NDT test
