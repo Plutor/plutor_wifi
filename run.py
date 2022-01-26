@@ -19,6 +19,7 @@ TINYDB = os.path.join(THISDIR, "db.json")
 CFG = os.path.join(THISDIR, "cfg")
 PLOTPNG = os.path.join(THISDIR, "plot.png")
 NOW = time.time()
+COLORS = ['r', 'g', 'b', 'c']
 
 
 def parseargs():
@@ -26,6 +27,7 @@ def parseargs():
     parser.add_argument('--force_tweet', action='store_true')
     parser.add_argument('--only_test', action='store_true')
     parser.add_argument('--skip_test', action='store_true')
+    parser.add_argument('--dry_run', action='store_true')
     return parser.parse_args()
 
 
@@ -188,26 +190,59 @@ class PlutorWifi(object):
         """Returns med_down, med_up."""
         print("Creating graph")
         # Define data
-        xs = [[], [], [], [], [], []]
-        ys = [[], [], [], [], [], []]
+        xs = [[], [], [], [], [], [], [], []]
+        ys = [[], [], [], [], [], [], [], []]
         for run in self.hist:
             stamp = datetime.datetime.fromtimestamp(run['timestamp'])
+            totalup = 0
+            totaldown = 0
+            ups = 0
+            downs = 0
             if 'speedtest' in run['data']:
+                totaldown += run['data']['speedtest'][0]
+                downs += 1
                 ys[0].append(run['data']['speedtest'][0])
                 xs[0].append(stamp)
+                totalup += run['data']['speedtest'][1]
+                ups += 1
                 ys[4].append(run['data']['speedtest'][1])
                 xs[4].append(stamp)
-            if 'fastcom' in run['data']:
-                ys[1].append(run['data']['fastcom'][0])
-                xs[1].append(stamp)
             if 'mlab' in run['data']:
-                ys[2].append(run['data']['mlab'][0])
-                xs[2].append(stamp)
+                totaldown += run['data']['mlab'][0]
+                downs += 1
+                ys[1].append(run['data']['mlab'][0])
+                xs[1].append(stamp)
+                totalup += run['data']['mlab'][1]
+                ups += 1
                 ys[5].append(run['data']['mlab'][1])
                 xs[5].append(stamp)
+            if 'fastcom' in run['data']:
+                totaldown += run['data']['fastcom'][0]
+                downs += 1
+                ys[2].append(run['data']['fastcom'][0])
+                xs[2].append(stamp)
             if 'chromedl' in run['data']:
+                totaldown += run['data']['chromedl'][0]
+                downs += 1
                 ys[3].append(run['data']['chromedl'][0])
                 xs[3].append(stamp)
+            if downs:
+                ys[6].append(totaldown/downs)
+                xs[6].append(stamp)
+            if ups:
+                ys[7].append(totalup/ups)
+                xs[7].append(stamp)
+
+        # Calculate running averages for ys[6] and ys[7]
+        for ynum in (6, 7):
+            win = []
+            for n, y in enumerate(ys[ynum]):
+                x = xs[ynum][n]
+                win.append((x, y))
+                # remove all old values
+                win = list(filter(lambda e: x-e[0] < datetime.timedelta(hours=3), win))
+                # calculate the window avg
+                ys[ynum][n] = sum(map(lambda e: e[1], win))/len(win)
 
         med_down = statistics.median(filter(None, ys[0]+ys[1]+ys[2]))
         med_up = statistics.median(filter(None, ys[3]+ys[4]))
@@ -217,13 +252,32 @@ class PlutorWifi(object):
         ax.xaxis.set_major_formatter(dates.DateFormatter('%H:%M'))
         ax.minorticks_on()
         for n, x in enumerate(xs):
-            ax.plot(x, ys[n])
+            if n > 5:
+                break
+            ax.plot(x, ys[n],
+                    linestyle='',
+                    marker='v' if (n < 4) else '^',
+                    markersize=3,
+                    color=COLORS[n % len(COLORS)],
+                    alpha=0.5)
+
+        # Plot averages for down and up
+        ax.plot(xs[6], ys[6],
+                linestyle='-',
+                linewidth=2,
+                color='tab:pink')
+        ax.plot(xs[7], ys[7],
+                linestyle='-',
+                linewidth=2,
+                color='tab:purple')
+
 
         # Add plot details
         plt.ylabel('Mbps')
-        plt.legend(['speedtest down', 'fast.com down', 'mlab down', 'chrome down',
-                    'speedtest up', 'mlab up'])
-        plt.style.use('fivethirtyeight')
+        plt.legend(['speedtest down', 'mlab down', 'fast.com down', 'chrome down',
+                    'speedtest up', 'mlab up', 'avg down', 'avg up'],
+                    fontsize='small',
+                    ncol=2)
 
         # Save the plot
         plt.savefig(PLOTPNG, dpi=100, bbox_inches='tight')
@@ -256,7 +310,10 @@ def main():
         if data:
             p.save_data(data, do_tweet)
         
-    if do_tweet:
+    if args.dry_run:
+        p.generate_graph()
+        print("Graph generated")
+    elif do_tweet:
         p.tweet_history(24*60*60)
     else:
         print("Skipping tweet")
