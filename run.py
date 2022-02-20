@@ -161,7 +161,7 @@ class PlutorWifi(object):
             print('Bad return code ', cp.returncode)
             return None
         data = json.loads(cp.stdout.decode("utf-8")) 
-        return (data['Download']['Value'], data['Upload']['Value'], data['MinRTT']['Value'])
+        return (data['Download']['Value'], data['Upload']['Value'], data['MinRTT']['Value'], data['DownloadRetrans']['Value'])
 
     def should_mlabndt(self, max_age_secs):
         for rec in self.hist:
