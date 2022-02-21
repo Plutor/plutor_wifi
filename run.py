@@ -242,7 +242,13 @@ class PlutorWifi(object):
                 # remove all old values
                 win = list(filter(lambda e: x-e[0] < datetime.timedelta(hours=3), win))
                 # calculate the window avg
-                ys[ynum][n] = sum(map(lambda e: e[1], win))/len(win)
+                if len(win) < 5:
+                    xs[ynum][n] = 0
+                    ys[ynum][n] = 0
+                else:
+                    ys[ynum][n] = sum(map(lambda e: e[1], win))/len(win)
+            xs[ynum] = [v for v in xs[ynum] if v != 0]
+            ys[ynum] = [v for v in ys[ynum] if v != 0]
 
         med_down = statistics.median(filter(None, ys[0]+ys[1]+ys[2]))
         med_up = statistics.median(filter(None, ys[3]+ys[4]))
