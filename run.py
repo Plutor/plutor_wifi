@@ -190,8 +190,8 @@ class PlutorWifi(object):
         """Returns med_down, med_up."""
         print("Creating graph")
         # Define data
-        xs = [[], [], [], [], [], [], [], []]
-        ys = [[], [], [], [], [], [], [], []]
+        xs = [[], [], [], [], [], [], [], [], []]
+        ys = [[], [], [], [], [], [], [], [], []]
         for run in self.hist:
             stamp = datetime.datetime.fromtimestamp(run['timestamp'])
             totalup = 0
@@ -216,6 +216,8 @@ class PlutorWifi(object):
                 ups += 1
                 ys[5].append(run['data']['mlab'][1])
                 xs[5].append(stamp)
+                ys[8].append(run['data']['mlab'][3])  # rexmit
+                xs[8].append(stamp)
             if 'fastcom' in run['data']:
                 totaldown += run['data']['fastcom'][0]
                 downs += 1
@@ -277,13 +279,26 @@ class PlutorWifi(object):
                 linewidth=2,
                 color='tab:purple')
 
+        # Plot rexmits on a right yaxis.
+        rightyaxis = ax.twinx()
+        rightyaxis.set_ylabel("Rexmits (%)")
+        rightyaxis.set_ylim(bottom=0, top=max(max(*ys[8])*1.2, 1))
+        rightyaxis.fill_between(xs[8], ys[8],
+                                linestyle='-',
+                                color='tab:grey',
+                                alpha=0.3)
 
         # Add plot details
-        plt.ylabel('Mbps')
-        plt.legend(['speedtest down', 'mlab down', 'fast.com down', 'chrome down',
-                    'speedtest up', 'mlab up', 'avg down', 'avg up'],
-                    fontsize='small',
-                    ncol=2)
+        ax.set_ylabel('Mbps')
+        leg = ax.legend(['speedtest down', 'mlab down', 'fast.com down', 'chrome down',
+                        'speedtest up', 'mlab up', 'avg down', 'avg up', 'mlab rexmits'],
+                        framealpha=0.8,
+                        fontsize='small',
+                        ncol=2)
+        # Trick to put legend in front of right axis plot:
+        # https://github.com/matplotlib/matplotlib/issues/3706#issuecomment-378407795
+        leg.remove()
+        rightyaxis.add_artist(leg)
 
         # Save the plot
         plt.savefig(PLOTPNG, dpi=100, bbox_inches='tight')
