@@ -282,7 +282,7 @@ class PlutorWifi(object):
         # Plot rexmits on a right yaxis.
         rightyaxis = ax.twinx()
         rightyaxis.set_ylabel("Rexmits (%)")
-        rightyaxis.set_ylim(bottom=0, top=max(max(*ys[8])*1.2, 1))
+        rightyaxis.set_ylim(bottom=0, top=max(max(*ys[8])*1.2, 20))
         rightyaxis.fill_between(xs[8], ys[8],
                                 linestyle='-',
                                 color='tab:grey',
